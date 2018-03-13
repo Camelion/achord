@@ -18,6 +18,7 @@ package com.github.mangelion;
 
 import com.github.mangelion.test.extensions.docker.DockerContainer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import ru.yandex.clickhouse.ClickHouseDataSource;
@@ -38,6 +39,7 @@ import static reactor.core.publisher.Flux.range;
  */
 @DockerContainer(image = "yandex/clickhouse-server", ports = {"9000:9000", "8123:8123"})
 final class ClickHouseClientTest {
+    private static final int NUMBERS_COUNT = 500 * 1024 * 1024;
     private ClickHouseClient client;
     private DataSource dataSource;
 
@@ -50,13 +52,13 @@ final class ClickHouseClientTest {
     @Test
     @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
             "--multiquery",
-            "--query=CREATE TABLE IF NOT EXISTS default.connection_test(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
+            "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint32(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallIntMultipleTimes() {
         Object[] data = new Object[]{1};
 
-        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test(value)",
+        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test_uint32(value)",
                 publisherToFlowPublisher(
-                        range(0, 500 * 1024 * 1024)
+                        range(0, NUMBERS_COUNT)
                                 .map(i -> data)));
 
         StepVerifier
@@ -67,15 +69,15 @@ final class ClickHouseClientTest {
     @Test
     @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
             "--multiquery",
-            "--query=CREATE TABLE IF NOT EXISTS default.connection_test(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
+            "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint32(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallIntMultipleTimes_withCompression() {
         client = client.compression(CompressionMethod.LZ4);
 
         Object[] data = new Object[]{1};
 
-        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test(value)",
+        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test_uint32(value)",
                 publisherToFlowPublisher(
-                        range(0, 500 * 1024 * 1024)
+                        range(0, NUMBERS_COUNT)
                                 .map(i -> data)));
 
         StepVerifier
@@ -84,15 +86,16 @@ final class ClickHouseClientTest {
     }
 
     @Test
+    @Tag("jdbc-comparison")
     @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
             "--multiquery",
-            "--query=CREATE TABLE IF NOT EXISTS default.connection_test(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
+            "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint32(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallIntMultipleTimes_jdbc() throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             try (ClickHouseStatement stmt = (ClickHouseStatement) connection.createStatement()) {
-                stmt.sendRowBinaryStream("INSERT INTO default.connection_test(value)",
+                stmt.sendRowBinaryStream("INSERT INTO default.connection_test_uint32(value)",
                         stream -> {
-                            for (int i = 0; i < 500 * 1024 * 1024; i++)
+                            for (int i = 0; i < NUMBERS_COUNT; i++)
                                 stream.writeUInt32(1);
                         });
             }
@@ -102,15 +105,15 @@ final class ClickHouseClientTest {
     @Test
     @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
             "--multiquery",
-            "--query=CREATE TABLE IF NOT EXISTS default.connection_test(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt64) ENGINE = MergeTree(date, (date), 8192)"})
+            "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint64(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt64) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallLongMultipleTimes_withCompression() {
         client = client.compression(CompressionMethod.LZ4);
 
         Object[] data = new Object[]{1L};
 
-        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test(value)",
+        Flow.Publisher<Void> result = client.sendData("INSERT INTO default.connection_test_uint64(value)",
                 publisherToFlowPublisher(
-                        range(0, 500 * 1024 * 1024)
+                        range(0, NUMBERS_COUNT)
                                 .map(i -> data)));
 
         StepVerifier
@@ -119,15 +122,16 @@ final class ClickHouseClientTest {
     }
 
     @Test
+    @Tag("jdbc-comparison")
     @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
             "--multiquery",
-            "--query=CREATE TABLE IF NOT EXISTS default.connection_test(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt64) ENGINE = MergeTree(date, (date), 8192)"})
+            "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint64(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt64) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallLongMultipleTimes_jdbc() throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             try (ClickHouseStatement stmt = (ClickHouseStatement) connection.createStatement()) {
-                stmt.sendRowBinaryStream("INSERT INTO default.connection_test(value)",
+                stmt.sendRowBinaryStream("INSERT INTO default.connection_test_uint64(value)",
                         stream -> {
-                            for (int i = 0; i < 500 * 1024 * 1024; i++)
+                            for (int i = 0; i < NUMBERS_COUNT; i++)
                                 stream.writeUInt64(1);
                         });
             }
