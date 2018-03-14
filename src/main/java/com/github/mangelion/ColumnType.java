@@ -30,17 +30,17 @@ import static java.time.temporal.ChronoField.INSTANT_SECONDS;
  * @since 14.03.2018
  */
 final class ColumnType {
-    private static final int INT_8 = 0;
-    private static final int U_INT_8 = 1;
-    private static final int INT_32 = 2;
-    private static final int U_INT_32 = 3;
-    private static final int INT_64 = 4;
-    private static final int U_INT_64 = 5;
-    private static final int STRING = 6;
-    private static final int DATE = 7;
-    private static final int DATETIME = 8;
+    private static final byte INT_8 = 0;
+    private static final byte U_INT_8 = 1;
+    private static final byte INT_32 = 2;
+    private static final byte U_INT_32 = 3;
+    private static final byte INT_64 = 4;
+    private static final byte U_INT_64 = 5;
+    private static final byte STRING = 6;
+    private static final byte DATE = 7;
+    private static final byte DATETIME = 8;
 
-    static int valueOf(String typeName) {
+    static byte valueOf(String typeName) {
         switch (typeName) {
             case "Int8":
                 return INT_8;
@@ -65,7 +65,7 @@ final class ColumnType {
         }
     }
 
-    static CharSequence valueOf(int type) {
+    static CharSequence valueOf(byte type) {
         switch (type) {
             case INT_8:
                 return "Int8";
@@ -90,7 +90,7 @@ final class ColumnType {
         }
     }
 
-    static void read(int type, ByteBuf from, ByteBuf to, int count) {
+    static void read(byte type, ByteBuf from, ByteBuf to, int count) {
         switch (type) {
             case INT_8:
             case U_INT_8:
@@ -130,7 +130,7 @@ final class ColumnType {
         in.readBytes(out, to - from);
     }
 
-    static void write(int type, Object val, ByteBuf buf) {
+    static void write(byte type, Object val, ByteBuf buf) {
         switch (type) {
             case INT_8:
             case U_INT_8:

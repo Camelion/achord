@@ -22,9 +22,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.openjdk.jmh.annotations.Mode.AverageTime;
@@ -34,7 +31,8 @@ import static org.openjdk.jmh.annotations.Mode.AverageTime;
  * @since 13.03.2018
  * <p>
  * Ensures that there is problem with vtables if many types inherited from one
- * and performance will be slightly better with manual switch case
+ * and performance will be slightly better with manual switch case.
+ * (Covers only single field type)
  */
 @Fork(value = 1, jvmArgs = {"-server"/*, "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"*/})
 @BenchmarkMode(AverageTime)
@@ -43,22 +41,6 @@ import static org.openjdk.jmh.annotations.Mode.AverageTime;
 @Measurement(iterations = 5)
 @State(Scope.Benchmark)
 public class ColumnTypeBenchmarks {
-
-    private static final Unsafe U;
-    private static long integerValueFieldOffset;
-
-    static {
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            U = (Unsafe) f.get(null);
-
-            integerValueFieldOffset = U.objectFieldOffset(Integer.class.getDeclaredField("value"));
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private Object[] data;
     private EConsumer eConsumer;
 
@@ -82,7 +64,7 @@ public class ColumnTypeBenchmarks {
 
     @Benchmark
     public void tConsume(Blackhole bh) {
-        Types.tconsume(1, data[0], bh);
+        Types.tconsume((byte) 1, data[0], bh);
     }
 
     enum EConsumer {
@@ -134,7 +116,7 @@ public class ColumnTypeBenchmarks {
     }
 
     static class Types {
-        static void tconsume(int type, Object o, Blackhole bh) {
+        static void tconsume(byte type, Object o, Blackhole bh) {
             switch (type) {
                 case 1:
                     consume1(o, bh);
