@@ -27,126 +27,137 @@ import static java.time.temporal.ChronoField.INSTANT_SECONDS;
 
 /**
  * @author Camelion
- * @since 25.12.2017
- * <p>
- * Need to be completely redesign, because casting objects is so expensive
+ * @since 14.03.2018
  */
-enum ColumnType {
-    Int8 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeByte(((Number) val).byteValue());
+final class ColumnType {
+    private static final int INT_8 = 0;
+    private static final int U_INT_8 = 1;
+    private static final int INT_32 = 2;
+    private static final int U_INT_32 = 3;
+    private static final int INT_64 = 4;
+    private static final int U_INT_64 = 5;
+    private static final int STRING = 6;
+    private static final int DATE = 7;
+    private static final int DATETIME = 8;
+
+    static int valueOf(String typeName) {
+        switch (typeName) {
+            case "Int8":
+                return INT_8;
+            case "UInt8":
+                return U_INT_8;
+            case "Int32":
+                return INT_32;
+            case "UInt32":
+                return U_INT_32;
+            case "Int64":
+                return INT_64;
+            case "UInt64":
+                return U_INT_64;
+            case "String":
+                return STRING;
+            case "Date":
+                return DATE;
+            case "DateTime":
+                return DATETIME;
+            default:
+                throw new IllegalArgumentException("Can not find according type for name " + typeName);
+        }
+    }
+
+    static CharSequence valueOf(int type) {
+        switch (type) {
+            case INT_8:
+                return "Int8";
+            case U_INT_8:
+                return "UInt8";
+            case INT_32:
+                return "Int32";
+            case U_INT_32:
+                return "UInt32";
+            case INT_64:
+                return "Int64";
+            case U_INT_64:
+                return "UInt64";
+            case STRING:
+                return "String";
+            case DATE:
+                return "Date";
+            case DATETIME:
+                return "DateTime";
+            default:
+                throw new IllegalArgumentException("Can not find according name for type " + type);
+        }
+    }
+
+    static void read(int type, ByteBuf from, ByteBuf to, int count) {
+        switch (type) {
+            case INT_8:
+            case U_INT_8:
+                from.readBytes(to, count);
+                return;
+            case INT_32:
+            case U_INT_32:
+            case DATETIME:
+                from.readBytes(to, count * 4);
+                return;
+            case INT_64:
+            case U_INT_64:
+                from.readBytes(to, count * 8);
+            case STRING:
+                readString(from, to, count);
+                return;
+            case DATE:
+                from.readBytes(to, count * 2);
+                return;
+            default:
+                throw new IllegalArgumentException("Can not read unknown type " + type);
+        }
+    }
+
+    private static void readString(ByteBuf in, ByteBuf out, int count) {
+        int from = in.readerIndex();
+        in.markReaderIndex();
+        for (int i = 0; i < count; i++) {
+            int strSize = (int) readVarUInt(in);
+
+            in.readerIndex(in.readerIndex() + strSize);
         }
 
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows);
-        }
-    },
-    UInt8 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeByte(((Number) val).byteValue());
-        }
+        int to = in.readerIndex();
+        in.resetReaderIndex();
 
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows);
-        }
-    },
-    Int32 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeIntLE((Integer) val);
-        }
+        in.readBytes(out, to - from);
+    }
 
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 4);
+    public static <T> void write(int type, T t, ByteBuf buf) {
+        switch (type) {
+            case INT_8:
+            case U_INT_8:
+                buf.writeByte((byte) t);
+                return;
+            case INT_32:
+            case U_INT_32:
+                buf.writeIntLE((int) t);
+                return;
+            case INT_64:
+            case U_INT_64:
+                buf.writeLongLE((long) t);
+                return;
+            case STRING:
+                writeStringBinary(buf, (String) t);
+                return;
+            // possible writeShortLe and writeIntLe below
+            case DATE:
+                Temporal date = (Temporal) t;
+                buf.writeShort(date.get(EPOCH_DAY));
+                return;
+            case DATETIME:
+                Temporal dateTime = (Temporal) t;
+                buf.writeInt((int) dateTime.getLong(INSTANT_SECONDS));
+                return;
+            default:
+                throw new IllegalArgumentException("Can not write unknown type " + type);
         }
-    },
-    UInt32 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeIntLE((Integer) val);
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 4);
-        }
-    },
-    Int64 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeLongLE(((Number) val).longValue());
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 8);
-        }
-    },
-    UInt64 {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            buf.writeLongLE(((Number) val).longValue());
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 8);
-        }
-    },
-    String {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            String str = (java.lang.String) val;
-            writeStringBinary(buf, str);
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            int from = buf.readerIndex();
-            buf.markReaderIndex();
-            for (int i = 0; i < rows; i++) {
-                int strSize = (int) readVarUInt(buf);
-
-                buf.readerIndex(buf.readerIndex() + strSize);
-            }
-
-            int to = buf.readerIndex();
-            buf.resetReaderIndex();
-
-            buf.readBytes(column.data, to - from);
-        }
-    },
-    Date {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            Temporal dateTime = (Temporal) val;
-            buf.writeShort(dateTime.get(EPOCH_DAY));
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 2);
-        }
-    },
-    DateTime {
-        @Override
-        void write(ByteBuf buf, Object val) {
-            Temporal dateTime = (Temporal) val;
-            buf.writeInt((int) dateTime.getLong(INSTANT_SECONDS));
-        }
-
-        @Override
-        void read(ByteBuf buf, ColumnWithTypeAndName column, int rows) {
-            buf.readBytes(column.data, rows * 4);
-        }
-    };
-
-    abstract void write(ByteBuf buf, Object val);
-
-    abstract void read(ByteBuf buf, ColumnWithTypeAndName column, int rows);
+    }
 }
