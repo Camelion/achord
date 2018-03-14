@@ -26,8 +26,8 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.openjdk.jmh.annotations.Mode.AverageTime;
 
 /**
  * @author Camelion
@@ -37,8 +37,8 @@ import static org.openjdk.jmh.annotations.Mode.Throughput;
  * and performance will be slightly better with manual switch case
  */
 @Fork(value = 1, jvmArgs = {"-server"/*, "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"*/})
-@BenchmarkMode(Throughput)
-@OutputTimeUnit(MICROSECONDS)
+@BenchmarkMode(AverageTime)
+@OutputTimeUnit(NANOSECONDS)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
 @State(Scope.Benchmark)
@@ -117,6 +117,16 @@ public class ColumnTypeBenchmarks {
             void consume(Object o, Blackhole bh) {
                 bh.consume((int) o);
             }
+        }, E_CONSUMER_7 {
+            @Override
+            void consume(Object o, Blackhole bh) {
+                bh.consume((int) o);
+            }
+        }, E_CONSUMER_8 {
+            @Override
+            void consume(Object o, Blackhole bh) {
+                bh.consume((int) o);
+            }
         };
 
 
@@ -143,6 +153,15 @@ public class ColumnTypeBenchmarks {
                     return;
                 case 6:
                     consume6(o, bh);
+                    return;
+                case 7:
+                    consume7(o, bh);
+                    return;
+                case 8:
+                    consume8(o, bh);
+                    return;
+                default:
+                    throw new IllegalArgumentException("Can not write unknown type " + type);
             }
         }
 
@@ -167,6 +186,14 @@ public class ColumnTypeBenchmarks {
         }
 
         static void consume6(Object o, Blackhole bh) {
+            bh.consume((int) o);
+        }
+
+        static void consume7(Object o, Blackhole bh) {
+            bh.consume((int) o);
+        }
+
+        static void consume8(Object o, Blackhole bh) {
             bh.consume((int) o);
         }
     }

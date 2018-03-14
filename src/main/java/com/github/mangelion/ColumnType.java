@@ -130,7 +130,7 @@ final class ColumnType {
         in.readBytes(out, to - from);
     }
 
-    public static void write(int type, Object val, ByteBuf buf) {
+    static void write(int type, Object val, ByteBuf buf) {
         switch (type) {
             case INT_8:
             case U_INT_8:
