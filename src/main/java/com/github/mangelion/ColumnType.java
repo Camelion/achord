@@ -130,30 +130,30 @@ final class ColumnType {
         in.readBytes(out, to - from);
     }
 
-    public static <T> void write(int type, T t, ByteBuf buf) {
+    public static void write(int type, Object val, ByteBuf buf) {
         switch (type) {
             case INT_8:
             case U_INT_8:
-                buf.writeByte((byte) t);
+                buf.writeByte((byte) val);
                 return;
             case INT_32:
             case U_INT_32:
-                buf.writeIntLE((int) t);
+                buf.writeIntLE((int) val);
                 return;
             case INT_64:
             case U_INT_64:
-                buf.writeLongLE((long) t);
+                buf.writeLongLE((long) val);
                 return;
             case STRING:
-                writeStringBinary(buf, (String) t);
+                writeStringBinary(buf, (String) val);
                 return;
             // possible writeShortLe and writeIntLe below
             case DATE:
-                Temporal date = (Temporal) t;
+                Temporal date = (Temporal) val;
                 buf.writeShort(date.get(EPOCH_DAY));
                 return;
             case DATETIME:
-                Temporal dateTime = (Temporal) t;
+                Temporal dateTime = (Temporal) val;
                 buf.writeInt((int) dateTime.getLong(INSTANT_SECONDS));
                 return;
             default:
