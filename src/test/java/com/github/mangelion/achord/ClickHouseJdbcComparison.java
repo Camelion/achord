@@ -44,7 +44,7 @@ final class ClickHouseJdbcComparison {
     }
 
     @Test
-    @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
+    @DockerContainer(image = "yandex/clickhouse-client", net = "host", waitStop = true, arguments = {
             "--multiquery",
             "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint32(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt32) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallIntMultipleTimes_jdbc() throws SQLException {
@@ -60,7 +60,7 @@ final class ClickHouseJdbcComparison {
     }
 
     @Test
-    @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
+    @DockerContainer(image = "yandex/clickhouse-client", net = "host", waitStop = true, arguments = {
             "--multiquery",
             "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint64_3(date Date DEFAULT toDate(datetime), id UInt64, datetime UInt32, value UInt64) ENGINE = MergeTree(date, (datetime), 8192)"})
     void sendThreeColumns_jdbc() throws SQLException {
@@ -79,7 +79,7 @@ final class ClickHouseJdbcComparison {
     }
 
     @Test
-    @DockerContainer(image = "yandex/clickhouse-client", net = "host", arguments = {
+    @DockerContainer(image = "yandex/clickhouse-client", net = "host", waitStop = true, arguments = {
             "--multiquery",
             "--query=CREATE TABLE IF NOT EXISTS default.connection_test_uint64(date Date DEFAULT toDate(datetime), datetime DateTime DEFAULT now(), value UInt64) ENGINE = MergeTree(date, (date), 8192)"})
     void sendSmallLongMultipleTimes_jdbc() throws SQLException {
