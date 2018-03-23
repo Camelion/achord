@@ -33,7 +33,7 @@ import static reactor.core.publisher.Flux.generate;
  * @since 11/02/2018
  * Only comparisons test with jdbc in this class
  */
-@DockerContainer(image = "yandex/clickhouse-server", ports = {"9000:9000", "8123:8123"})
+@DockerContainer(image = "yandex/clickhouse-server", ports = {"9000:9000"})
 final class ClickHouseClientTest {
     static final int NUMBERS_COUNT = 256 * 1024 * 1024;
     private ClickHouseClient client;
