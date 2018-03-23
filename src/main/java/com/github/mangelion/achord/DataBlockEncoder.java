@@ -54,7 +54,7 @@ final class DataBlockEncoder extends MessageToByteEncoder<DataBlock> {
         writeVarUInt(out, columns.length);
         writeVarUInt(out, block.rows);
 
-        // for avoid reallocations
+        // for avoid reallocations it is faster to precalculate estimated size
         int estimatedRest = 0;
         for (int i = 0; i < columns.length; i++) {
             estimatedRest += 4 + columns[i].name.length();

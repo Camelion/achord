@@ -22,6 +22,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.Flow;
@@ -136,16 +138,18 @@ public final class ClickHouseClient implements AutoCloseable {
     }
 
     private static Bootstrap prepareBootstrap(Bootstrap b, boolean strictNative) {
-        Bootstrap prepared = b.clone();
+        Bootstrap clone = b.clone();
 
-        if (tryNative(prepared)) {
-            return prepared;
+        if (tryNative(clone)) {
+            return clone;
         } else if (strictNative) {
-            throw new IllegalStateException("Strict native network mode enabled, " +
+            throw new IllegalStateException("Strict native network mode is enabled, " +
                     "but attempt to enable native mode was failed");
+        } else {
+            // fallback to Java.NIO
+            return clone.group(new NioEventLoopGroup())
+                    .channel(NioSocketChannel.class);
         }
-
-        return prepared;
     }
 
     @Override
