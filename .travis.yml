@@ -10,8 +10,6 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
-jdk:
-  - oraclejdk10
 
 sudo: required
 services:
